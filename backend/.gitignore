@@ -1,0 +1,39 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Testing
+coverage
+
+# Next.js
+/.next/
+/out/
+
+# Production Build
+/build
+
+# Misc
+.DS_Store
+*.pem
+
+# Debug
+npm-debug.log*
+yarn-debug.log*
+ts-debug.log*
+
+# Local Env Files (CRITICAL for security)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Prisma
+# Keep the schema, but ignore the actual sqlite db if you use one locally
+*.db
+*.db-journal
+
+# Typescript
+*.tsbuildinfo
+next-env.d.ts
