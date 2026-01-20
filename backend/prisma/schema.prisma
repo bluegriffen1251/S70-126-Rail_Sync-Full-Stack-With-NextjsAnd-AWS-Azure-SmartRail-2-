@@ -7,29 +7,28 @@ generator client {
   provider = "prisma-client-js"
 }
 
-
-// Add a User model to make bookings
+// UPDATED USER MODEL
 model User {
-  id       Int       @id @default(autoincrement())
-  email    String    @unique
-  name     String
-  bookings Booking[] // Relation to bookings
+  id        Int       @id @default(autoincrement())
+  email     String    @unique
+  name      String
+  password  String    // <--- ADDED: Required for Auth
+  createdAt DateTime  @default(now()) // <--- ADDED: Good practice
+  bookings  Booking[] 
 }
 
 model Train {
-  id            Int      @id @default(autoincrement())
-  trainNumber   String   @unique
+  id            Int       @id @default(autoincrement())
+  trainNumber   String    @unique
   name          String
   currentStatus String
   
-  // ADD THIS: Inventory for the transaction
-  availableSeats Int     @default(100) 
+  availableSeats Int      @default(100) 
   
   schedule      Schedule[]
   bookings      Booking[]
 }
 
-// Add a Booking model (equivalent to 'Order' in the assignment)
 model Booking {
   id        Int      @id @default(autoincrement())
   userId    Int
@@ -40,11 +39,10 @@ model Booking {
   train     Train    @relation(fields: [trainId], references: [id])
 }
 
-// ... your existing Station and Schedule models remain the same
 model Station {
-  id       Int        @id @default(autoincrement())
-  code     String     @unique
-  name     String
+  id        Int       @id @default(autoincrement())
+  code      String    @unique
+  name      String
   schedules Schedule[]
 }
 
@@ -59,4 +57,3 @@ model Schedule {
   train         Train    @relation(fields: [trainId], references: [id])
   station       Station  @relation(fields: [stationId], references: [id])
 }
-
