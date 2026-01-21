@@ -1,29 +1,31 @@
 'use server'
 
+import { prisma } from '@/lib/prisma';
+
 export async function getTrains() {
-  console.log("Fetching trains from backend..."); // Helpful for debugging
+  console.log("Fetching trains from database...");
 
   try {
-    // 1. Fetch from your Express Backend
-    const response = await fetch('http://127.0.0.1:8000/api/trains', {
-      method: 'GET',
-      cache: 'no-store', // Ensures we don't serve stale data
-      headers: {
-        'Content-Type': 'application/json',
-      },
+    const trains = await prisma.train.findMany({
+      // ✅ FIX: Explicitly include the schedule
+      include: {
+        schedule: {
+          // Bonus: Include station details so you can show Station Names, not just IDs
+          include: {
+            station: true 
+          },
+          // Bonus: Sort the schedule so stops appear in the correct order
+          orderBy: {
+            sequenceOrder: 'asc' 
+          }
+        }
+      }
     });
 
-    // 2. Check for errors
-    if (!response.ok) {
-      throw new Error(`Backend error: ${response.statusText}`);
-    }
-
-    // 3. Parse JSON
-    const data = await response.json();
-    return data; // This should be your array of trains
+    return trains;
 
   } catch (error) {
     console.error("Failed to fetch trains:", error);
-    return []; // Return empty array on failure so UI doesn't crash
+    return [];
   }
 }

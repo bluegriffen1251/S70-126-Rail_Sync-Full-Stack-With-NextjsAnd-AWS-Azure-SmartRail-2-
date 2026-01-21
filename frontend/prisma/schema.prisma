@@ -7,44 +7,44 @@ generator client {
   provider = "prisma-client-js"
 }
 
-
-// Add a User model to make bookings
+// MERGED USER MODEL (Use this one only)
 model User {
-  id       Int       @id @default(autoincrement())
-  email    String    @unique
-  name     String
-  bookings Booking[] // Relation to bookings
+  id        Int       @id @default(autoincrement())
+  name      String
+  email     String    @unique
+  password  String    
+  role      String    @default("user") // <--- Role added here
+  createdAt DateTime  @default(now()) 
+  
+  bookings  Booking[] // <--- Relation to Booking kept here
 }
 
 model Train {
-  id            Int      @id @default(autoincrement())
-  trainNumber   String   @unique
+  id            Int       @id @default(autoincrement())
+  trainNumber   String    @unique
   name          String
   currentStatus String
-  
-  // ADD THIS: Inventory for the transaction
-  availableSeats Int     @default(100) 
-  
+   
+  availableSeats Int      @default(100) 
+   
   schedule      Schedule[]
   bookings      Booking[]
 }
 
-// Add a Booking model (equivalent to 'Order' in the assignment)
 model Booking {
   id        Int      @id @default(autoincrement())
   userId    Int
   trainId   Int
   createdAt DateTime @default(now())
-  
+   
   user      User     @relation(fields: [userId], references: [id])
   train     Train    @relation(fields: [trainId], references: [id])
 }
 
-// ... your existing Station and Schedule models remain the same
 model Station {
-  id       Int        @id @default(autoincrement())
-  code     String     @unique
-  name     String
+  id        Int       @id @default(autoincrement())
+  code      String    @unique
+  name      String
   schedules Schedule[]
 }
 
@@ -55,8 +55,7 @@ model Schedule {
   arrivalTime   DateTime
   departureTime DateTime
   sequenceOrder Int
-  
+   
   train         Train    @relation(fields: [trainId], references: [id])
   station       Station  @relation(fields: [stationId], references: [id])
 }
-
