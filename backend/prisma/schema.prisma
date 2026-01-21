@@ -7,14 +7,16 @@ generator client {
   provider = "prisma-client-js"
 }
 
-// UPDATED USER MODEL
+// MERGED USER MODEL (Use this one only)
 model User {
   id        Int       @id @default(autoincrement())
-  email     String    @unique
   name      String
-  password  String    // <--- ADDED: Required for Auth
-  createdAt DateTime  @default(now()) // <--- ADDED: Good practice
-  bookings  Booking[] 
+  email     String    @unique
+  password  String    
+  role      String    @default("user") // <--- Role added here
+  createdAt DateTime  @default(now()) 
+  
+  bookings  Booking[] // <--- Relation to Booking kept here
 }
 
 model Train {
@@ -22,9 +24,9 @@ model Train {
   trainNumber   String    @unique
   name          String
   currentStatus String
-  
+   
   availableSeats Int      @default(100) 
-  
+   
   schedule      Schedule[]
   bookings      Booking[]
 }
@@ -34,7 +36,7 @@ model Booking {
   userId    Int
   trainId   Int
   createdAt DateTime @default(now())
-  
+   
   user      User     @relation(fields: [userId], references: [id])
   train     Train    @relation(fields: [trainId], references: [id])
 }
@@ -53,7 +55,7 @@ model Schedule {
   arrivalTime   DateTime
   departureTime DateTime
   sequenceOrder Int
-  
+   
   train         Train    @relation(fields: [trainId], references: [id])
   station       Station  @relation(fields: [stationId], references: [id])
 }
