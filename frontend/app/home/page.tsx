@@ -1,99 +1,109 @@
-// 1. Use the '@/' alias so this import works from any folder
-import { getTrains } from "@/app/actions/getTrains";
+import { getTrains } from '../actions/getTrains';
+import LiveStatusButton from '../../components/LiveStatusButton';
 
-// 2. Define dates as 'string' because they come from JSON
-type Station = {
-  id: number;
-  name: string;
-};
-
-type ScheduleStop = {
-  id: number;
-  trainId: number;
-  stationId: number;
-  arrivalTime: string; // Changed from Date to string
-  sequenceOrder: number;
-  station: Station;
+// 1. SMART CROWD LOGIC 🧠
+const getCrowdLevel = () => {
+  const hour = new Date().getHours(); 
+  // 🔴 PEAK
+  if ((hour >= 8 && hour <= 11) || (hour >= 17 && hour <= 20)) {
+    return { label: '🔴 High Rush', sub: 'Office Peak', color: 'bg-red-100 text-red-800 border-red-200' };
+  }
+  // 🟠 MODERATE
+  if (hour === 7 || (hour >= 12 && hour <= 16) || hour === 21) {
+    return { label: '🟠 Medium Rush', sub: 'Standard', color: 'bg-orange-100 text-orange-800 border-orange-200' };
+  }
+  // 🟢 OFF-PEAK
+  return { label: '🟢 Low Rush', sub: 'Seats Available', color: 'bg-green-100 text-green-800 border-green-200' };
 };
 
 type Train = {
   id: number;
   name: string;
   trainNumber: string;
-  currentStatus: string;
-  schedule: ScheduleStop[];
+  type?: string; 
+  availableSeats: number;
+  // We need to access the schedule array to get station names
+  schedule: {
+    arrival: string;
+    departure: string;
+    station: { name: string };
+  }[];
 };
 
 export default async function Home() {
-  const trainsRaw = await getTrains();
-  
-  // Safety check: ensure trainsRaw is an array before mapping
-  const trains: Train[] = Array.isArray(trainsRaw) ? trainsRaw : [];
+  let trains: Train[] = [];
+  let error = '';
+
+  try {
+    trains = await getTrains();
+  } catch (e) {
+    if (e instanceof Error) error = e.message;
+  }
+
+  const crowd = getCrowdLevel();
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold text-gray-800 mb-6">🚆 Live Train Status</h1>
-        
-        <div className="grid gap-6">
-          {trains.map((train) => {
-            // 3. CRITICAL: Sort the schedule so stations appear in correct order (1 -> 2 -> 3)
-            const sortedSchedule = [...train.schedule].sort((a, b) => a.sequenceOrder - b.sequenceOrder);
+    <div className="min-h-screen bg-slate-50 p-4 md:p-8">
+      <div className="max-w-5xl mx-auto mb-8 text-center">
+        <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight">
+          🚄 Local train status
+        </h1>
+        <p className="text-slate-500 mt-2">Live Bengaluru Commuter Dashboard</p>
+      </div>
 
-            return (
-              <div key={train.id} className="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
-                {/* Train Header */}
-                <div className="bg-blue-600 p-4 text-white flex justify-between items-center">
-                  <div>
-                    <h2 className="text-xl font-bold">{train.name}</h2>
-                    <p className="text-blue-100 text-sm">#{train.trainNumber}</p>
-                  </div>
-                  <div className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide ${
-                    train.currentStatus === 'On Time' ? 'bg-green-400 text-green-900' : 'bg-red-400 text-red-900'
-                  }`}>
-                    {train.currentStatus}
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded mb-6 text-center">
+           {error}
+        </div>
+      )}
+
+      <div className="max-w-5xl mx-auto grid gap-6">
+        {trains.map((train) => {
+          // SAFEGUARDS: Check if schedule exists before trying to read it
+          const startStation = train.schedule?.[0]?.station?.name || "Bengaluru";
+          const endStation = train.schedule?.[1]?.station?.name || "Destination";
+
+          return (
+            <div key={train.id} className="bg-white shadow-sm rounded-xl overflow-hidden border border-slate-200 hover:shadow-md transition duration-200">
+              
+              <div className="p-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-100">
+                <div>
+                  <h2 className="text-lg font-bold text-slate-900">{train.name}</h2>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-xs font-mono font-medium border border-slate-200">
+                      #{train.trainNumber}
+                    </span>
                   </div>
                 </div>
 
-                {/* Route Details */}
-                <div className="p-4">
-                  <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Route Schedule</h3>
-                  <div className="space-y-4">
-                    {sortedSchedule.map((stop, index) => (
-                      <div key={stop.id} className="flex items-start relative">
-                        {/* Visual Timeline Line */}
-                        {index !== sortedSchedule.length - 1 && (
-                          <div className="absolute left-[19px] top-8 bottom-[-16px] w-0.5 bg-gray-200"></div>
-                        )}
-                        
-                        {/* Station Dot */}
-                        <div className="z-10 w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center border-2 border-blue-100 mr-4">
-                          <span className="text-xs font-bold text-blue-600">{index + 1}</span>
-                        </div>
-                        
-                        {/* Station Info */}
-                        <div>
-                          <p className="font-medium text-gray-900">{stop.station.name}</p>
-                          <p className="text-xs text-gray-500">
-                            {/* We manually convert the string to a Date object here for formatting */}
-                            Arr: {new Date(stop.arrivalTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                <div className={`flex flex-col items-end px-3 py-1.5 rounded-lg border ${crowd.color}`}>
+                  <span className="text-xs font-bold uppercase tracking-wider">{crowd.label}</span>
+                  <span className="text-[10px] opacity-80 font-medium">{crowd.sub}</span>
                 </div>
               </div>
-            );
-          })}
 
-          {trains.length === 0 && (
-            <div className="text-center py-10">
-              <p className="text-gray-500 mb-2">No trains found.</p>
-              <p className="text-sm text-gray-400">Make sure your Backend is running on port 8000 and you ran the seed script.</p>
+              {/* --- ROUTE INFO (START -> END) --- */}
+              <div className="p-4 bg-slate-50 border-b border-slate-100">
+                 <div className="flex justify-between items-center text-sm text-gray-700">
+                    <div>
+                        <p className="text-[10px] uppercase tracking-wider text-slate-400 font-bold">From</p>
+                        <p className="font-bold text-slate-800">{startStation}</p> 
+                    </div>
+                    <div className="text-slate-300 text-xl">➔</div>
+                    <div className="text-right">
+                        <p className="text-[10px] uppercase tracking-wider text-slate-400 font-bold">To</p>
+                        <p className="font-bold text-slate-800">{endStation}</p>
+                    </div>
+                 </div>
+              </div>
+
+              <div className="p-4 bg-white flex items-center justify-between">
+                 <LiveStatusButton trainNumber={train.trainNumber} />
+              </div>
+
             </div>
-          )}
-        </div>
+          );
+        })}
       </div>
     </div>
   );
