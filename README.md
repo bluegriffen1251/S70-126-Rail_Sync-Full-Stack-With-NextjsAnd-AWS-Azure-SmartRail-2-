@@ -126,4 +126,15 @@ The system is designed for growth. Adding a new role (e.g., `moderator`) is simp
 * **Styling:** Tailwind CSS
 
 
-<!-- npx prisma migrate dev --name init -->
+## 🚀 Caching Strategy
+We use **Redis** to cache API responses and reduce database load.
+
+### Architecture: Cache-Aside
+1.  **Read (GET):** The API checks Redis first.
+    * **Hit:** Returns cached JSON immediately (~10ms).
+    * **Miss:** Queries PostgreSQL, updates Redis, and returns data (~150ms).
+2.  **Write (POST):** When a new user is created, we invalidate (delete) the cache keys to ensure data consistency.
+
+### Policies
+* **TTL (Time-To-Live):** 60 seconds. This prevents the cache from holding stale data indefinitely if an invalidation fails.
+* **Keys:** `users:page:${page}:limit:${limit}` (Dynamic keys to support pagination).
