@@ -1,59 +1,104 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma'; // This imports the helper we created earlier
+import { prisma } from '@/lib/prisma';
+import { handleError } from '@/lib/errorHandler';
+import { AppError } from '@/lib/AppError';
+import redis from '@/lib/redis'; // <--- Import your Redis connection
 
-// 1. GET: Fetch all users with Pagination
 export async function GET(req: Request) {
   try {
-    // Parse the URL to get page and limit
+    const userRole = req.headers.get("x-user-role");
+
+    // 1. Pagination logic
     const { searchParams } = new URL(req.url);
     const page = Number(searchParams.get('page')) || 1;
     const limit = Number(searchParams.get('limit')) || 10;
     const skip = (page - 1) * limit;
 
-    // Fetch data from DB
-    // IMPORTANT: If your table is named 'Train', change 'prisma.user' to 'prisma.train'
+    // 2. GENERATE DYNAMIC CACHE KEY
+    // We include page/limit so Page 1 doesn't overwrite Page 2
+    const cacheKey = `users:page:${page}:limit:${limit}`;
+
+    // 3. CHECK REDIS (Cache Strategy: Cache-Aside)
+    const cachedData = await redis.get(cacheKey);
+
+    if (cachedData) {
+      console.log(`🚀 Cache HIT for ${cacheKey}`);
+      // If found, return cached data immediately (Fast!)
+      return NextResponse.json(JSON.parse(cachedData));
+    }
+
+    // 4. CACHE MISS - Fetch from Database (Slow)
+    console.log(`🐌 Cache MISS for ${cacheKey} - Fetching from DB`);
+    
     const data = await prisma.user.findMany({
-      skip: skip,
+      skip,
       take: limit,
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true, 
+        createdAt: true,
+      }
     });
 
-    // Get total count for pagination info
     const total = await prisma.user.count();
 
-    // Return the formatted JSON response
-    return NextResponse.json({
-      page,
-      limit,
-      total,
+    // Construct the full response object
+    const response = {
+      success: true,
+      currentUserRole: userRole,
+      pagination: { page, limit, total },
       data: data
-    }, { status: 200 });
+    };
+
+    // 5. STORE IN REDIS
+    // TTL (Time-To-Live) set to 60 seconds ("EX", 60)
+    await redis.set(cacheKey, JSON.stringify(response), "EX", 60);
+
+    return NextResponse.json(response);
 
   } catch (error) {
-    console.error("Error fetching data:", error);
-    return NextResponse.json({ error: 'Failed to fetch data' }, { status: 500 });
+    return handleError(error, "GET /api/users");
   }
 }
 
-// 2. POST: Create a new user
+// Admin-only User Creation
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
-
-    // Basic Validation: Check if data exists
-    if (!body) {
-      return NextResponse.json({ error: 'Missing request body' }, { status: 400 });
+    // 1. SECURITY CHECK
+    const userRole = req.headers.get("x-user-role");
+    if (userRole !== 'ADMIN') {
+      throw new AppError("Access Denied: Admins only.", 403);
     }
 
-    // Create the record in DB
-    // IMPORTANT: Change 'prisma.user' to your actual model name
+    const body = await req.json();
+
+    // 2. VALIDATION CHECK
+    if (!body.email || !body.password || !body.name) {
+      throw new AppError("Missing required fields: name, email, or password", 400);
+    }
+
     const newData = await prisma.user.create({
       data: body,
     });
 
-    return NextResponse.json({ message: 'Created successfully', data: newData }, { status: 201 });
+    // 3. CACHE INVALIDATION
+    // Since the data changed, all cached pages are now "stale" (outdated).
+    // We find all keys starting with "users:page:" and delete them.
+    const keys = await redis.keys("users:page:*");
+    if (keys.length > 0) {
+      await redis.del(keys);
+      console.log(`🧹 Cache Invalidated: Deleted ${keys.length} page(s)`);
+    }
+
+    return NextResponse.json({ 
+      success: true, 
+      message: 'Created successfully', 
+      data: newData 
+    }, { status: 201 });
 
   } catch (error) {
-    console.error("Error creating record:", error);
-    return NextResponse.json({ error: 'Error creating record' }, { status: 500 });
+    return handleError(error, "POST /api/users");
   }
 }
