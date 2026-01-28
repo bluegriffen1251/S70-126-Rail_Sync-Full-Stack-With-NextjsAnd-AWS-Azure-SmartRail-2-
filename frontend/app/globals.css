@@ -1,31 +1,12 @@
-@import "tailwindcss";
-
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-
-/* 1. REGISTER THEME VARIABLES (Replaces tailwind.config.ts) */
-@theme {
-  /* This connects your CSS variables to Tailwind utilities */
-  /* usage: class="bg-background text-foreground" */
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-
-  /* This connects the Next.js font variables */
-  /* usage: class="font-sans" */
-  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
-  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
-}
-
-/* 2. DEFINE CSS VARIABLES */
 :root {
   --background: #ffffff;
   --foreground: #171717;
 }
 
-/* 3. DARK MODE SUPPORT */
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0a;
@@ -33,9 +14,19 @@
   }
 }
 
-/* 4. BASE STYLES */
 body {
-  background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-sans); /* Use the Next.js font, not Arial */
+  background: var(--background);
+  /* This uses the CSS variable set by layout.tsx */
+  font-family: var(--font-geist-sans), Arial, sans-serif;
+}
+
+/* Optional: Add smooth utilities */
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+body {
+  background-color: red !important;
 }

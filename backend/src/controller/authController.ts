@@ -22,7 +22,12 @@ export const signup = async (req: Request, res: Response): Promise<any> => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const newUser = await prisma.user.create({
-      data: { name, email, password: hashedPassword },
+      data: { 
+        name, 
+        email, 
+        password: hashedPassword,
+        role: "user" // Default role
+      },
     });
 
     // Exclude password from response
@@ -54,10 +59,16 @@ export const login = async (req: Request, res: Response): Promise<any> => {
       return res.status(401).json({ success: false, message: "Invalid credentials" });
     }
 
+    // 👇 UPDATED: Include Name and Role in the Token
     const token = jwt.sign(
-      { id: user.id, email: user.email }, 
+      { 
+        id: user.id, 
+        email: user.email, 
+        role: user.role,           // Needed for permissions
+        name: user.name || "User"  // Needed for Frontend UI
+      }, 
       JWT_SECRET, 
-      { expiresIn: "1h" }
+      { expiresIn: "7d" } // Increased to 7 days for better UX
     );
 
     return res.status(200).json({

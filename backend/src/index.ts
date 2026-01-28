@@ -1,22 +1,20 @@
 import express from 'express';
 import cors from 'cors';
 import trainRoutes from './routes/trains';
-import authRoutes from './routes/auth'; // <--- 1. Import Auth Routes
+import authRoutes from './routes/auth';
+import bookingRoutes from './routes/bookings'; // 👈 1. IMPORT THIS
 
 const app = express();
-const PORT = 8000;
+const PORT = process.env.PORT || 8000;
 
-// ALLOW REQUESTS FROM NEXT.JS
-app.use(cors({
-  origin: 'http://localhost:3000' 
-}));
-
+app.use(cors());
 app.use(express.json());
 
-// Mount your routes
+// Register Routes
+app.use('/api/auth', authRoutes);
 app.use('/api/trains', trainRoutes);
-app.use('/api/auth', authRoutes); // <--- 2. Enable Auth Routes here
+app.use('/api/bookings', bookingRoutes); // 👈 2. USE THIS
 
 app.listen(PORT, () => {
-  console.log(`Backend running on http://localhost:${PORT}`);
+  console.log(`Server is running on port ${PORT}`);
 });

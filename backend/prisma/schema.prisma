@@ -1,61 +1,73 @@
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-}
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
   provider = "prisma-client-js"
 }
 
-// MERGED USER MODEL (Use this one only)
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
 model User {
-  id        Int       @id @default(autoincrement())
-  name      String
+  id        String    @id @default(uuid())
   email     String    @unique
-  password  String    
-  role      String    @default("user") // <--- Role added here
-  createdAt DateTime  @default(now()) 
-  
-  bookings  Booking[] // <--- Relation to Booking kept here
+  password  String
+  name      String?
+  role      String    @default("user") // admin, user
+  bookings  Booking[]
+  createdAt DateTime  @default(now())
 }
 
 model Train {
-  id            Int       @id @default(autoincrement())
-  trainNumber   String    @unique
-  name          String
-  currentStatus String
-   
-  availableSeats Int      @default(100) 
-   
-  schedule      Schedule[]
-  bookings      Booking[]
-}
+  id          String     @id @default(uuid())
+  trainNumber String     @unique
+  name        String
+  source      String
+  destination String
+  status      String     // e.g., "On Time", "Delayed"
+  platform    String?
+  updatedAt   DateTime   @updatedAt
 
-model Booking {
-  id        Int      @id @default(autoincrement())
-  userId    Int
-  trainId   Int
-  createdAt DateTime @default(now())
-   
-  user      User     @relation(fields: [userId], references: [id])
-  train     Train    @relation(fields: [trainId], references: [id])
+  // Relations
+  bookings    Booking[]
+  schedules   Schedule[]
 }
 
 model Station {
-  id        Int       @id @default(autoincrement())
-  code      String    @unique
-  name      String
+  id        String     @id @default(uuid())
+  code      String     @unique // e.g., "NDLS"
+  name      String     // e.g., "New Delhi"
+  city      String
+  
+  // Relations
   schedules Schedule[]
 }
 
 model Schedule {
-  id            Int      @id @default(autoincrement())
-  trainId       Int
-  stationId     Int
+  id            String   @id @default(uuid())
+  trainId       String
+  stationId     String
   arrivalTime   DateTime
   departureTime DateTime
-  sequenceOrder Int
-   
+  platform      String?
+
+  // Relations
   train         Train    @relation(fields: [trainId], references: [id])
   station       Station  @relation(fields: [stationId], references: [id])
+}
+
+model Booking {
+  id         String   @id @default(uuid())
+  userId     String
+  trainId    String
+  seatNumber String
+  date       DateTime
+  status     String   @default("Confirmed")
+  createdAt  DateTime @default(now())
+
+  // Relations
+  user       User     @relation(fields: [userId], references: [id])
+  train      Train    @relation(fields: [trainId], references: [id])
 }
