@@ -138,3 +138,19 @@ We use **Redis** to cache API responses and reduce database load.
 ### Policies
 * **TTL (Time-To-Live):** 60 seconds. This prevents the cache from holding stale data indefinitely if an invalidation fails.
 * **Keys:** `users:page:${page}:limit:${limit}` (Dynamic keys to support pagination).
+
+## 📧 Email Notification Service
+Integrated a transactional email service using **Nodemailer** with Gmail SMTP.
+
+### Features
+* **Provider:** Gmail (via App Password).
+* **Templating:** Modular HTML templates (`lib/templates/welcome.ts`) with responsive design.
+* **Architecture:** Dedicated utility `sendEmail` function decoupled from the API route logic.
+
+### API Endpoint
+**POST** `/api/email`
+```json
+{
+  "to": "user@example.com",
+  "name": "John Doe"
+}
