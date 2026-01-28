@@ -8,22 +8,16 @@
     "start": "next start"
   },
   "dependencies": {
-trainStatusTesting
     "@prisma/adapter-pg": "^7.2.0",
-    "lucide-react": "^0.562.0",
-    "next": "16.1.1",
-    "pg": "^8.17.1",
-    "react": "19.2.3",
-    "react-dom": "19.2.3"
-
     "@prisma/client": "^5.22.0",
     "ioredis": "^5.9.2",
-    "next": "^16.1.4",
+    "lucide-react": "^0.562.0",
+    "next": "16.1.1",
     "nodemailer": "^7.0.13",
+    "pg": "^8.17.1",
     "prisma": "^5.22.0",
-    "react": "^19.2.3",
-    "react-dom": "^19.2.3"
-main
+    "react": "19.2.3",
+    "react-dom": "19.2.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
