@@ -1,4 +1,4 @@
-🚉 RailFlow: Real-Time Train Intelligence
+🚉 RailSync: Real-Time Train Intelligence
 Transforming the Indian Commute with Real-Time Data & Intelligent Routing.
 
 📖 Project Overview
@@ -6,7 +6,7 @@ Problem Statement
 Millions of local trains in India run late every day, yet commuters rarely receive accurate, real-time updates or actionable route alternatives. This uncertainty leads to delays, missed connections, overcrowded stations, and inefficient travel.
 
 Solution
-RailFlow is a web application providing real-time train status, delay predictions, and alternative route suggestions. By integrating mock real-time data with intelligent routing logic, we help commuters make faster, more informed decisions.
+RailSync is a web application providing real-time train status, delay predictions, and alternative route suggestions. By integrating mock real-time data with intelligent routing logic, we help commuters make faster, more informed decisions.
 
 🎯 Project Goals (MVP)
 Live Feed: View real-time train arrival/delay information.

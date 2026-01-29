@@ -39,6 +39,8 @@ export default function LoginPage() {
         
         // Refresh router to ensure Middleware runs again
         router.refresh();
+        localStorage.setItem("token", data.token);
+        alert("Login successful!");
         router.push("/dashboard");
       } else {
         setError(data.message || "Login failed. Please check your credentials.");
