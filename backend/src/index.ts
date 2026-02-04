@@ -1,32 +1,25 @@
 import express from 'express';
-import cors from 'cors';
-import dotenv from 'dotenv';
-
-// Import your routes
+// 👇 1. Import cors
+import cors from 'cors'; 
 import trainRoutes from './routes/trains';
-import authRoutes from './routes/auth';
-import bookingRoutes from './routes/bookings'; 
-
-dotenv.config();
+// import bookingRoutes from './routes/bookings'; // (Keep this commented or removed)
 
 const app = express();
 const PORT = process.env.PORT || 8000;
 
-// Middleware
-// ✅ Configure CORS once (Allow Frontend)
-app.use(cors({
-  origin: 'http://localhost:3000',
-  credentials: true
-}));
+// 👇 2. Enable CORS for EVERYONE (Easiest fix for now)
+app.use(cors());
+
+// Alternatively, strictly allow only your frontend:
+// app.use(cors({
+//   origin: ["http://localhost:3000", "https://your-frontend-url.vercel.app"]
+// }));
 
 app.use(express.json());
 
-// Register Routes
-app.use('/api/auth', authRoutes);
+// Routes
 app.use('/api/trains', trainRoutes);
-app.use('/api/bookings', bookingRoutes);
 
-// Start Server
 app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });

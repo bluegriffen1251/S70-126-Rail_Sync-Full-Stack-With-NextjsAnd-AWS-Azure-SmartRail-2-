@@ -14,7 +14,6 @@ model User {
   name      String?
   role      String   @default("user") // admin, user
   createdAt DateTime @default(now())
-  // ❌ Removed: bookings relations
 }
 
 model Train {
@@ -27,9 +26,8 @@ model Train {
   platform    String?
   updatedAt   DateTime @updatedAt
 
-  // Relations
-  schedules   Schedule[]
-  // ❌ Removed: bookings relations
+  // ✅ FIXED: Changed to 'schedule' (Singular) to match your code
+  schedule    Schedule[]
 }
 
 model Station {
@@ -37,7 +35,7 @@ model Station {
   code      String     @unique // e.g., "NDLS"
   name      String     // e.g., "New Delhi"
   city      String
-  
+   
   // Relations
   schedules Schedule[]
 }
@@ -54,5 +52,3 @@ model Schedule {
   train   Train   @relation(fields: [trainId], references: [id])
   station Station @relation(fields: [stationId], references: [id])
 }
-
-// ❌ Removed: model Booking

@@ -3,61 +3,80 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('🌱 Seeding Real Bangalore Routes...');
+  console.log('🌱 Seeding All Real Bangalore Routes...');
 
-  const p = prisma as any;
-  if (p.booking) await p.booking.deleteMany();
-  if (p.stop) await p.stop.deleteMany();
-  await prisma.train.deleteMany();
-  if (p.station) await p.station.deleteMany();
+  // 1. CLEANUP
+  try {
+    await prisma.schedule.deleteMany();
+    await prisma.train.deleteMany();
+    await prisma.station.deleteMany();
+    console.log('🧹 Database cleared.');
+  } catch (e) {
+    console.log('⚠️ Cleanup skipped.');
+  }
 
-  // 1. DATA: Defined with Start and End Stations
+  // 2. THE MASTER LIST OF TRAINS
   const trainsData = [
-    { name: "KSR Bengaluru - Marikuppam MEMU", number: "06553", start: "KSR Bengaluru", end: "Marikuppam" },
-    { name: "Marikuppam - KSR Bengaluru MEMU", number: "06554", start: "Marikuppam", end: "KSR Bengaluru" },
-    { name: "KSR Bengaluru - Jolarpettai MEMU", number: "06551", start: "KSR Bengaluru", end: "Jolarpettai" },
-    { name: "Whitefield - KSR Bengaluru MEMU", number: "06567", start: "Whitefield", end: "KSR Bengaluru" },
-    { name: "KSR Bengaluru - Bangarapet MEMU", number: "06545", start: "KSR Bengaluru", end: "Bangarapet" },
-    { name: "KSR Bengaluru - Mysuru MEMU", number: "06257", start: "KSR Bengaluru", end: "Mysuru" },
-    { name: "Mysuru - KSR Bengaluru MEMU", number: "06258", start: "Mysuru", end: "KSR Bengaluru" },
-    { name: "Yesvantpur - Hosur DEMU", number: "06393", start: "Yesvantpur", end: "Hosur" },
-    { name: "Hosur - Yesvantpur DEMU", number: "06394", start: "Hosur", end: "Yesvantpur" },
-    { name: "KSR Bengaluru - Tumakuru MEMU", number: "06571", start: "KSR Bengaluru", end: "Tumakuru" },
-    { name: "Tumakuru - KSR Bengaluru MEMU", number: "06572", start: "Tumakuru", end: "KSR Bengaluru" },
+    { name: "KSR Bengaluru - Marikuppam MEMU", number: "06553", start: "KSR Bengaluru", startCode: "SBC", end: "Marikuppam", endCode: "MKM" },
+    { name: "Marikuppam - KSR Bengaluru MEMU", number: "06554", start: "Marikuppam", startCode: "MKM", end: "KSR Bengaluru", endCode: "SBC" },
+    { name: "KSR Bengaluru - Jolarpettai MEMU", number: "06551", start: "KSR Bengaluru", startCode: "SBC", end: "Jolarpettai", endCode: "JTJ" },
+    { name: "Whitefield - KSR Bengaluru MEMU", number: "06567", start: "Whitefield", startCode: "WFD", end: "KSR Bengaluru", endCode: "SBC" },
+    { name: "KSR Bengaluru - Bangarapet MEMU", number: "06545", start: "KSR Bengaluru", startCode: "SBC", end: "Bangarapet", endCode: "BWT" },
+    { name: "KSR Bengaluru - Mysuru MEMU", number: "06257", start: "KSR Bengaluru", startCode: "SBC", end: "Mysuru", endCode: "MYS" },
+    { name: "Mysuru - KSR Bengaluru MEMU", number: "06258", start: "Mysuru", startCode: "MYS", end: "KSR Bengaluru", endCode: "SBC" },
+    { name: "Yesvantpur - Hosur DEMU", number: "06393", start: "Yesvantpur", startCode: "YPR", end: "Hosur", endCode: "HSRA" },
+    { name: "Hosur - Yesvantpur DEMU", number: "06394", start: "Hosur", startCode: "HSRA", end: "Yesvantpur", endCode: "YPR" },
+    { name: "KSR Bengaluru - Tumakuru MEMU", number: "06571", start: "KSR Bengaluru", startCode: "SBC", end: "Tumakuru", endCode: "TK" },
+    { name: "Tumakuru - KSR Bengaluru MEMU", number: "06572", start: "Tumakuru", startCode: "TK", end: "KSR Bengaluru", endCode: "SBC" },
   ];
 
-  // 2. INSERTION
-  for (const train of trainsData) {
-    const scheduleData = p.stop ? {
-      create: [
-        {
-          station: { create: { name: train.start, code: train.start.substring(0, 3).toUpperCase(), latitude: 0, longitude: 0 } },
-          arrival: new Date(),
-          departure: new Date(),
-          stopOrder: 1
-        },
-        {
-          station: { create: { name: train.end, code: train.end.substring(0, 3).toUpperCase(), latitude: 0, longitude: 0 } },
-          arrival: new Date(),
-          departure: new Date(),
-          stopOrder: 2
-        }
-      ]
-    } : undefined;
+  // 3. GENERATE TRAINS & SCHEDULES AUTOMATICALLY
+  for (const t of trainsData) {
+    
+    // We create realistic times based on "Now" so they look active
+    const departure = new Date();
+    const arrival = new Date(departure.getTime() + 2 * 60 * 60 * 1000); // 2 hours later
 
     await prisma.train.create({
       data: {
-        name: train.name,
-        trainNumber: train.number,
-        availableSeats: 0,
-        currentStatus: "On Time",
-        schedule: scheduleData
+        trainNumber: t.number,
+        name: t.name,
+        source: t.start,
+        destination: t.end,
+        status: "On Time",
+        // ✅ The Fix: Using 'schedule' (Singular) + 'connectOrCreate' for Stations
+        schedule: {
+          create: [
+            {
+              arrivalTime: departure,
+              departureTime: departure,
+              platform: "1",
+              station: {
+                connectOrCreate: {
+                  where: { code: t.startCode },
+                  create: { name: t.start, code: t.startCode, city: t.start.split(' ')[0] }
+                }
+              }
+            },
+            {
+              arrivalTime: arrival,
+              departureTime: arrival,
+              platform: "2",
+              station: {
+                connectOrCreate: {
+                  where: { code: t.endCode },
+                  create: { name: t.end, code: t.endCode, city: t.end.split(' ')[0] }
+                }
+              }
+            }
+          ]
+        }
       }
     });
-    console.log(`✅ Created Route: ${train.start} ➔ ${train.end}`);
+    console.log(`✅ Added: ${t.number} (${t.start} -> ${t.end})`);
   }
 
-  console.log('🚀 Database updated with Real Routes!');
+  console.log('🚀 Database populated with ALL trains + Live Tracking support!');
 }
 
 main()

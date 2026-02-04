@@ -6,8 +6,8 @@ export const getTrains = async (req: Request, res: Response) => {
   try {
     const trains = await prisma.train.findMany({
       include: {
-        // ✅ FIXED: Using 'schedules' (Plural) as requested by the server logs
-        schedules: {
+        // ✅ FIXED: Changed back to 'schedule' (Singular) for Local
+        schedule: {
           include: {
             station: true,
           },
@@ -28,7 +28,6 @@ export const getTrains = async (req: Request, res: Response) => {
 // 2. Get Single Train
 export const getTrainById = async (req: Request, res: Response) => {
   try {
-    // ✅ FIXED: Force 'id' to be a string to fix the "string | string[]" error
     const id = req.params.id as string;
 
     const train = await prisma.train.findFirst({
@@ -39,8 +38,8 @@ export const getTrainById = async (req: Request, res: Response) => {
         ]
       },
       include: {
-        // ✅ FIXED: Using 'schedules' (Plural)
-        schedules: {
+        // ✅ FIXED: Changed back to 'schedule' (Singular) for Local
+        schedule: {
           include: {
             station: true,
           },
