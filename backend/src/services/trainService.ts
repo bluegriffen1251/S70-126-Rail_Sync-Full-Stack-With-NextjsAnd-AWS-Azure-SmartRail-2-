@@ -4,7 +4,7 @@ export const getAllTrainsService = async () => {
   return await prisma.train.findMany({
     include: {
       // ✅ FIXED: Plural 'schedules'
-      schedules: {
+      schedule: {
         include: {
           station: true
         }
