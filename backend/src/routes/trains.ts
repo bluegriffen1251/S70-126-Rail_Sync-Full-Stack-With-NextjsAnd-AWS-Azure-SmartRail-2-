@@ -1,11 +1,12 @@
 import { Router } from 'express';
-import { getTrains, bookSeat } from '../controller/trainController';
-import { getLiveStatus } from '../controller/liveStatusController'; // <--- Check this import
+import { getTrains, getTrainById } from '../controller/trainController';
 
 const router = Router();
 
+// ✅ Route 1: List all trains
 router.get('/', getTrains);
-router.post('/book', bookSeat);
-router.get('/live/:trainNumber', getLiveStatus); // <--- This MUST be here
+
+// ✅ Route 2: Get details for one train (ID or Number)
+router.get('/:id', getTrainById);
 
 export default router;

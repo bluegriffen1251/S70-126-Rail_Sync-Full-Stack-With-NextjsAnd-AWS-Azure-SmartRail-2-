@@ -1,69 +1,52 @@
-import { Request, Response } from 'express';
-// ✅ Use the shared Prisma instance (prevents connection crashes)
+import { Request, Response } from "express";
 import { prisma } from "../lib/prisma";
 
-// 1. Get All Trains
+// ✅ 1. Get All Trains
 export const getTrains = async (req: Request, res: Response) => {
   try {
-    console.log("Fetching trains from database...");
-    
     const trains = await prisma.train.findMany({
-      orderBy: {
-        updatedAt: 'desc' 
-      }, // 👈 ✅ FIXED: Added closing brace and comma here
       include: {
-        schedule: {
-          include: {
-            station: true
-          }
-        }
-      }
+        schedule: { // Singular 'schedule' to match your schema
+          include: { station: true },
+          orderBy: { arrivalTime: 'asc' },
+        },
+      },
     });
-
-    console.log(`Found ${trains.length} trains.`);
     res.json(trains);
   } catch (error) {
     console.error("Error fetching trains:", error);
-    res.status(500).json({ error: "Failed to fetch live train data" });
+    res.status(500).json({ error: "Failed to fetch trains" });
   }
 };
 
-// 2. Book a Seat
-export const bookSeat = async (req: Request, res: Response) => {
-  const { trainId, userId } = req.body;
-
+// ✅ 2. Get Single Train (This was likely missing or undefined!)
+export const getTrainById = async (req: Request, res: Response) => {
   try {
-    // We use a transaction to prevent "Race Conditions" (double booking)
-    const result = await prisma.$transaction(async (tx) => {
-      // Step A: Lock the row and get the latest seat count
-      const train = await tx.train.findUnique({
-        where: { id: trainId },
-      });
+    const { id } = req.params;
 
-      if (!train) throw new Error("Train not found");
-      if (train.availableSeats <= 0) throw new Error("Sold Out!");
-
-      // Step B: Decrease the seat count
-      await tx.train.update({
-        where: { id: trainId },
-        data: { availableSeats: { decrement: 1 } },
-      });
-
-      // Step C: Create the booking record
-      const booking = await tx.booking.create({
-        data: {
-          userId: userId,
-          trainId: trainId,
+    // Search by UUID or Train Number
+    const train = await prisma.train.findFirst({
+      where: {
+        OR: [
+          { id: id },
+          { trainNumber: id }
+        ]
+      },
+      include: {
+        schedule: {
+          include: { station: true },
+          orderBy: { arrivalTime: 'asc' },
         },
-      });
-
-      return booking;
+      },
     });
 
-    res.json({ message: "Booking confirmed", bookingId: result.id });
+    if (!train) {
+      return res.status(404).json({ error: "Train not found" });
+    }
 
-  } catch (error: any) {
-    console.error("Booking failed:", error.message);
-    res.status(400).json({ error: error.message });
+    res.json(train);
+  } catch (error) {
+    console.error("Error fetching train:", error);
+    res.status(500).json({ error: "Failed to fetch train" });
   }
 };
