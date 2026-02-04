@@ -10,9 +10,10 @@ export const getTrains = async (req: Request, res: Response) => {
     const trains = await prisma.train.findMany({
       orderBy: {
         updatedAt: 'desc' 
-      }, // 👈 ✅ FIXED: Added closing brace and comma here
+      },
       include: {
-        schedule: {
+        // 👇 FIXED: Changed 'schedule' to 'schedules' (Plural)
+        schedules: {
           include: {
             station: true
           }
@@ -28,42 +29,28 @@ export const getTrains = async (req: Request, res: Response) => {
   }
 };
 
-// 2. Book a Seat
-export const bookSeat = async (req: Request, res: Response) => {
-  const { trainId, userId } = req.body;
-
+// 2. Get Single Train (Added this back so the route map works)
+export const getTrainById = async (req: Request, res: Response) => {
   try {
-    // We use a transaction to prevent "Race Conditions" (double booking)
-    const result = await prisma.$transaction(async (tx) => {
-      // Step A: Lock the row and get the latest seat count
-      const train = await tx.train.findUnique({
-        where: { id: trainId },
-      });
-
-      if (!train) throw new Error("Train not found");
-      if (train.availableSeats <= 0) throw new Error("Sold Out!");
-
-      // Step B: Decrease the seat count
-      await tx.train.update({
-        where: { id: trainId },
-        data: { availableSeats: { decrement: 1 } },
-      });
-
-      // Step C: Create the booking record
-      const booking = await tx.booking.create({
-        data: {
-          userId: userId,
-          trainId: trainId,
+    const { id } = req.params;
+    const train = await prisma.train.findUnique({
+      where: { id },
+      include: {
+        schedules: {
+          include: {
+            station: true,
+          },
         },
-      });
-
-      return booking;
+      },
     });
 
-    res.json({ message: "Booking confirmed", bookingId: result.id });
+    if (!train) {
+      return res.status(404).json({ error: "Train not found" });
+    }
 
-  } catch (error: any) {
-    console.error("Booking failed:", error.message);
-    res.status(400).json({ error: error.message });
+    res.json(train);
+  } catch (error) {
+    console.error("Error fetching train:", error);
+    res.status(500).json({ error: "Failed to fetch train" });
   }
 };
