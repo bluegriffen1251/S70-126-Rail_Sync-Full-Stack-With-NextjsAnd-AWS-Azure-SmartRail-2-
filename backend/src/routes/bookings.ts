@@ -1,10 +1,8 @@
-import express from 'express';
-import { getMyBookings } from '../controller/bookingController';
-import { authenticateToken } from '../middleware/auth';
+import { Router } from 'express';
 
-const router = express.Router();
+const router = Router();
 
-// GET /api/bookings (Protected)
-router.get('/', authenticateToken, getMyBookings);
+// Booking feature is disabled, so this router is empty.
+// This prevents the "Cannot find module" error.
 
 export default router;
