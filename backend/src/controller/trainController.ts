@@ -1,45 +1,41 @@
-import { Request, Response } from 'express';
-// ✅ Use the shared Prisma instance (prevents connection crashes)
+import { Request, Response } from "express";
 import { prisma } from "../lib/prisma";
 
-// 1. Get All Trains
+// ✅ 1. Get All Trains
 export const getTrains = async (req: Request, res: Response) => {
   try {
-    console.log("Fetching trains from database...");
-    
     const trains = await prisma.train.findMany({
-      orderBy: {
-        updatedAt: 'desc' 
-      },
       include: {
-        // 👇 FIXED: Changed 'schedule' to 'schedules' (Plural)
-        schedules: {
-          include: {
-            station: true
-          }
-        }
-      }
+        schedule: { // Singular 'schedule' to match your schema
+          include: { station: true },
+          orderBy: { arrivalTime: 'asc' },
+        },
+      },
     });
-
-    console.log(`Found ${trains.length} trains.`);
     res.json(trains);
   } catch (error) {
     console.error("Error fetching trains:", error);
-    res.status(500).json({ error: "Failed to fetch live train data" });
+    res.status(500).json({ error: "Failed to fetch trains" });
   }
 };
 
-// 2. Get Single Train (Added this back so the route map works)
+// ✅ 2. Get Single Train (This was likely missing or undefined!)
 export const getTrainById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const train = await prisma.train.findUnique({
-      where: { id },
+
+    // Search by UUID or Train Number
+    const train = await prisma.train.findFirst({
+      where: {
+        OR: [
+          { id: id },
+          { trainNumber: id }
+        ]
+      },
       include: {
-        schedules: {
-          include: {
-            station: true,
-          },
+        schedule: {
+          include: { station: true },
+          orderBy: { arrivalTime: 'asc' },
         },
       },
     });
