@@ -3,6 +3,7 @@ import express from 'express';
 import cors from 'cors'; 
 import trainRoutes from './routes/trains';
 // import bookingRoutes from './routes/bookings'; // (Keep this commented or removed)
+import stationRoutes from './routes/stations';
 
 const app = express();
 const PORT = process.env.PORT || 8000;
@@ -19,6 +20,8 @@ app.use(express.json());
 
 // Routes
 app.use('/api/trains', trainRoutes);
+app.use('/api/stations', stationRoutes);
+app.use(cors());
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
