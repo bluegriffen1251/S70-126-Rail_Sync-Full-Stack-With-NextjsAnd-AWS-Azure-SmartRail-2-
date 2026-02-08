@@ -30,7 +30,8 @@ export default function LoginPage() {
 
     try {
       // 1. Attempt Login
-      const res = await fetch("http://localhost:8000/api/auth/login", {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      const res = await fetch(`${API_URL}/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),

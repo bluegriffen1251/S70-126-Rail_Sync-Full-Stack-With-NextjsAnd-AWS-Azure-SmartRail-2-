@@ -32,7 +32,8 @@ export default function ProfilePage() {
     setUser(userData);
 
     // Fetch My Bookings
-    fetch("http://localhost:8000/api/bookings", {
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+    fetch(`${API_URL}/api/bookings`, {
       headers: { Authorization: `Bearer ${userData.token}` },
     })
       .then((res) => res.json())
